@@ -4,8 +4,7 @@ let playerId = null;
 let playerName = null;
 let playerScore = 0;
 let timerInterval = null;
-let peer = null;
-let conn = null;
+let transport = null;
 
 const screens = {
   join: document.getElementById('screen-join'),
@@ -33,13 +32,13 @@ document.getElementById('input-name').addEventListener('keydown', (e) => {
 });
 
 document.getElementById('btn-rejoin').addEventListener('click', () => {
-  if (conn) conn.close();
-  if (peer) peer.destroy();
+  if (transport) transport.destroy();
+  transport = null;
   playerId = null;
   showScreen('join');
 });
 
-function joinGame() {
+async function joinGame() {
   sound.init();
   const pin = document.getElementById('input-pin').value.trim();
   const name = document.getElementById('input-name').value.trim();
@@ -50,39 +49,42 @@ function joinGame() {
     showError('Bitte gültige PIN eingeben.');
     return;
   }
+  if (!name) {
+    showError('Bitte einen Namen eingeben.');
+    return;
+  }
 
   btn.disabled = true;
   btn.textContent = 'Verbinde...';
   errorEl.classList.add('hidden');
 
-  if (peer) peer.destroy();
+  if (transport) transport.destroy();
 
-  peer = new Peer({ debug: 1 });
+  transport = new QuizTransport(pin, 'player');
+  transport.onMessage = handleMessage;
 
-  peer.on('open', () => {
-    conn = peer.connect(`kahoot-${pin}`, { reliable: true });
-
-    conn.on('open', () => {
-      conn.send({ type: 'join', name });
-    });
-
-    conn.on('data', handleMessage);
-
-    conn.on('error', () => {
-      showError('Verbindung fehlgeschlagen.');
-      btn.disabled = false;
-      btn.textContent = 'Beitreten';
-    });
-  });
-
-  peer.on('error', (err) => {
-    showError('Kein Spiel mit dieser PIN gefunden. Host gestartet?');
+  try {
+    await transport.connect();
+    const joinTimeout = setTimeout(() => {
+      if (!playerId) {
+        showError('Kein Host gefunden. PIN prüfen – auf dem Beamer muss „Spiel erstellen" aktiv sein.');
+        btn.disabled = false;
+        btn.textContent = 'Beitreten';
+        transport.destroy();
+        transport = null;
+      }
+    }, 8000);
+    transport._joinTimeout = joinTimeout;
+    transport.sendToHost({ type: 'join', name });
+  } catch (err) {
+    showError('Verbindung fehlgeschlagen. Host gestartet? Internet/WLAN prüfen.');
     btn.disabled = false;
     btn.textContent = 'Beitreten';
-  });
+    transport.destroy();
+    transport = null;
+  }
 
-  function handleMessage(raw) {
-    const msg = typeof raw === 'string' ? JSON.parse(raw) : raw;
+  function handleMessage(msg) {
 
     if (msg.type === 'error') {
       showError(msg.message);
@@ -92,7 +94,8 @@ function joinGame() {
     }
 
     if (msg.type === 'joined') {
-      playerId = msg.playerId;
+      if (transport._joinTimeout) clearTimeout(transport._joinTimeout);
+      playerId = msg.playerId || transport.getPlayerId();
       playerName = msg.player.name;
       playerScore = 0;
       document.getElementById('waiting-name').textContent = playerName;
@@ -158,7 +161,7 @@ function submitAnswer(index, btn) {
   document.querySelectorAll('.p-answer').forEach((b) => b.classList.add('disabled'));
   btn.classList.add('selected');
   clearInterval(timerInterval);
-  conn.send({ type: 'answer', answerIndex: index });
+  transport.sendToHost({ type: 'answer', answerIndex: index });
 }
 
 function showReveal(data) {

@@ -6,7 +6,7 @@ const SHAPES = ['▲', '◆', '●', '■'];
 
 let state = null;
 let timerInterval = null;
-let peer = null;
+let transport = null;
 let playerConnections = new Map();
 
 const screens = {
@@ -24,55 +24,48 @@ function showScreen(name) {
 }
 
 function broadcast(msg) {
-  for (const entry of playerConnections.values()) {
-    if (entry.conn.open) entry.conn.send(msg);
-  }
+  transport?.broadcast(msg);
 }
 
-function initPeer(pin) {
-  return new Promise((resolve, reject) => {
-    if (peer) peer.destroy();
+function initTransport(pin) {
+  return new Promise(async (resolve, reject) => {
+    if (transport) transport.destroy();
     playerConnections.clear();
 
-    peer = new Peer(`kahoot-${pin}`, { debug: 1 });
+    transport = new QuizTransport(pin, 'host');
+    transport.onMessage = (msg) => {
+      const playerId = msg.playerId;
+      if (!playerId) return;
 
-    peer.on('open', () => resolve());
-    peer.on('error', (err) => reject(err));
-
-    peer.on('connection', (conn) => {
-      const playerId = conn.peer;
-
-      conn.on('data', (raw) => {
-        const msg = typeof raw === 'string' ? JSON.parse(raw) : raw;
-
-        if (msg.type === 'join') {
-          const result = game.addPlayer(playerId, msg.name);
-          if (result.error) {
-            conn.send({ type: 'error', message: result.error });
-            return;
-          }
-          playerConnections.set(playerId, { conn, name: msg.name });
-          conn.send({
-            type: 'joined',
-            playerId,
-            player: result.player,
-            state: game.getPlayerState(playerId),
-          });
-          sound.playJoin();
+      if (msg.type === 'join') {
+        const result = game.addPlayer(playerId, msg.name);
+        if (result.error) {
+          transport.sendToPlayer(playerId, { type: 'error', message: result.error });
+          return;
         }
+        playerConnections.set(playerId, { name: msg.name });
+        transport.sendToPlayer(playerId, {
+          type: 'joined',
+          playerId,
+          player: result.player,
+          state: game.getPlayerState(playerId),
+        });
+        sound.playJoin();
+      }
 
-        if (msg.type === 'answer') {
-          if (game.submitAnswer(playerId, msg.answerIndex)) {
-            conn.send({ type: 'answer:received', answerIndex: msg.answerIndex });
-          }
+      if (msg.type === 'answer') {
+        if (game.submitAnswer(playerId, msg.answerIndex)) {
+          transport.sendToPlayer(playerId, { type: 'answer:received', answerIndex: msg.answerIndex });
         }
-      });
+      }
+    };
 
-      conn.on('close', () => {
-        playerConnections.delete(playerId);
-        game.removePlayer(playerId);
-      });
-    });
+    try {
+      await transport.connect();
+      resolve();
+    } catch (err) {
+      reject(err);
+    }
   });
 }
 
@@ -105,11 +98,11 @@ document.getElementById('btn-create').addEventListener('click', async () => {
     game.onLeaderboard = (data) => broadcast({ type: 'leaderboard:show', ...data });
     game.onPodium = (data) => broadcast({ type: 'podium:show', ...data });
 
-    await initPeer(pin);
+    await initTransport(pin);
     state = game.getHostState();
     showLobby();
   } catch (err) {
-    alert('Verbindung fehlgeschlagen. Internet prüfen (nur ausgehend nötig).\n\n' + err.message);
+    alert('Verbindung fehlgeschlagen. Internet prüfen und erneut versuchen.\n\n' + err.message);
   } finally {
     btn.disabled = false;
     btn.textContent = 'Spiel erstellen';
@@ -196,7 +189,7 @@ document.getElementById('btn-restart').addEventListener('click', () => {
 document.getElementById('btn-end').addEventListener('click', () => {
   broadcast({ type: 'game:ended' });
   game.endGame();
-  if (peer) peer.destroy();
+  if (transport) transport.destroy();
   showScreen('setup');
   sound.stopMusic();
 });
