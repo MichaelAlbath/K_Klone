@@ -16,6 +16,36 @@ const io = new Server(server, {
 const PORT = process.env.PORT || 3000;
 const QUIZZES_DIR = path.join(__dirname, 'quizzes');
 
+function getPublicOrigin(req) {
+  const port = PORT;
+
+  if (process.env.CODESPACE_NAME) {
+    const domain = process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN || 'app.github.dev';
+    return `https://${process.env.CODESPACE_NAME}-${port}.${domain}`;
+  }
+
+  const forwardedHost = req.headers['x-forwarded-host'];
+  const forwardedProto = req.headers['x-forwarded-proto'] || 'https';
+  if (forwardedHost) {
+    const host = String(forwardedHost).split(',')[0].trim();
+    if (!host.includes('localhost') && !host.startsWith('127.')) {
+      return `${forwardedProto}://${host}`;
+    }
+  }
+
+  const host = req.headers.host || `localhost:${port}`;
+  if (!host.includes('localhost') && !host.startsWith('127.')) {
+    const proto = req.headers['x-forwarded-proto'] || 'https';
+    return `${proto}://${host}`;
+  }
+
+  return `http://${host}`;
+}
+
+function getJoinUrl(req, pin) {
+  return `${getPublicOrigin(req)}/play?pin=${pin}`;
+}
+
 const ANSWER_COLORS = ['#e21b3c', '#1368ce', '#d89e00', '#26890c'];
 const PHASES = {
   LOBBY: 'lobby',
@@ -219,9 +249,7 @@ app.get('/api/quiz/:id', (req, res) => {
 
 app.get('/api/qrcode', async (req, res) => {
   const pin = req.query.pin || '';
-  const host = req.headers.host;
-  const proto = req.headers['x-forwarded-proto'] || 'http';
-  const joinUrl = `${proto}://${host}/play?pin=${pin}`;
+  const joinUrl = getJoinUrl(req, pin);
   try {
     const svg = await QRCode.toString(joinUrl, { type: 'svg', margin: 1, width: 256 });
     res.type('svg').send(svg);
@@ -232,9 +260,7 @@ app.get('/api/qrcode', async (req, res) => {
 
 app.get('/api/join-url', (req, res) => {
   const pin = req.query.pin || '';
-  const host = req.headers.host;
-  const proto = req.headers['x-forwarded-proto'] || 'http';
-  res.json({ url: `${proto}://${host}/play?pin=${pin}` });
+  res.json({ url: getJoinUrl(req, pin), base: getPublicOrigin(req) });
 });
 
 io.on('connection', (socket) => {
