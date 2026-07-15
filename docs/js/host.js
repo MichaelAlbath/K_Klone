@@ -101,6 +101,13 @@ document.getElementById('btn-create').addEventListener('click', async () => {
     await initTransport(pin);
     state = game.getHostState();
     showLobby();
+    document.getElementById('conn-status')?.remove();
+    const status = document.createElement('p');
+    status.id = 'conn-status';
+    status.className = 'hint';
+    status.style.color = '#4cff4c';
+    status.textContent = '✓ Verbindung aktiv – Teilnehmer können beitreten';
+    document.querySelector('.lobby-footer')?.prepend(status);
   } catch (err) {
     alert('Verbindung fehlgeschlagen.\n\nTipp: Mobilfunk statt Hotspot probieren, oder anderes Netz.\n\n' + err.message);
   } finally {

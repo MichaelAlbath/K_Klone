@@ -100,6 +100,11 @@ async function joinGame() {
 
   function handleMessage(msg) {
 
+    if (msg.type === 'host-ready') {
+      btn.textContent = 'Trete bei...';
+      return;
+    }
+
     if (msg.type === 'error') {
       showError(msg.message);
       btn.disabled = false;
