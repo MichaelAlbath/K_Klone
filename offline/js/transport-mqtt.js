@@ -1,5 +1,5 @@
 const NTFY_BASE = 'https://ntfy.sh';
-const POLL_MS = 700;
+const POLL_MS = 600;
 const HEARTBEAT_MS = 4000;
 
 class QuizTransport {
@@ -7,7 +7,6 @@ class QuizTransport {
     this.pin = String(pin).trim();
     this.role = role;
     this.playerId = playerId || `p${Math.random().toString(36).slice(2, 10)}`;
-    this.sources = [];
     this.heartbeatTimer = null;
     this.pollTimer = null;
     this.lastIds = {};
@@ -68,17 +67,30 @@ class QuizTransport {
     this._handleRaw(JSON.stringify(item));
   }
 
+  _parseNdjson(text) {
+    if (!text || !text.trim()) return [];
+    const items = [];
+    for (const line of text.trim().split('\n')) {
+      if (!line.trim()) continue;
+      try {
+        items.push(JSON.parse(line));
+      } catch {
+        /* ignore bad line */
+      }
+    }
+    return items;
+  }
+
   async _pollOnce(topics) {
     for (const topic of topics) {
       if (this._destroyed) return;
       const since = this.lastIds[topic] || 'none';
       try {
-        const res = await fetch(`${NTFY_BASE}/${topic}/json?since=${since}`, {
+        const res = await fetch(`${NTFY_BASE}/${topic}/json?poll=1&since=${since}`, {
           cache: 'no-store',
         });
         if (!res.ok) continue;
-        const items = await res.json();
-        if (!Array.isArray(items)) continue;
+        const items = this._parseNdjson(await res.text());
         for (const item of items) {
           if (item.id) this.lastIds[topic] = item.id;
           this._handleNtfyItem(item);
@@ -110,8 +122,6 @@ class QuizTransport {
     return new Promise((resolve, reject) => {
       const topics = this._listenTopics();
       let resolved = false;
-      let sseOpened = 0;
-      const sseNeeded = topics.length;
 
       const finish = () => {
         if (resolved || this._destroyed) return;
@@ -130,22 +140,7 @@ class QuizTransport {
       }, 15000);
 
       this._startPolling(topics);
-
-      setTimeout(finish, 1200);
-
-      topics.forEach((topic) => {
-        const es = new EventSource(`${NTFY_BASE}/${topic}/sse`);
-        this.sources.push(es);
-
-        es.onopen = () => {
-          sseOpened++;
-          if (sseOpened >= sseNeeded) finish();
-        };
-
-        es.onmessage = (event) => {
-          this._handleRaw(event.data);
-        };
-      });
+      setTimeout(finish, 800);
     });
   }
 
@@ -184,8 +179,6 @@ class QuizTransport {
     if (this.pollTimer) clearInterval(this.pollTimer);
     this.heartbeatTimer = null;
     this.pollTimer = null;
-    for (const es of this.sources) es.close();
-    this.sources = [];
   }
 
   getPlayerId() {
