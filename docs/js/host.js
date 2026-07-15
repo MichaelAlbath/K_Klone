@@ -102,7 +102,7 @@ document.getElementById('btn-create').addEventListener('click', async () => {
     state = game.getHostState();
     showLobby();
   } catch (err) {
-    alert('Verbindung fehlgeschlagen. Internet prüfen und erneut versuchen.\n\n' + err.message);
+    alert('Verbindung fehlgeschlagen.\n\nTipp: Mobilfunk statt Hotspot probieren, oder anderes Netz.\n\n' + err.message);
   } finally {
     btn.disabled = false;
     btn.textContent = 'Spiel erstellen';
