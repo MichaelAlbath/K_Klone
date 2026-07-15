@@ -109,7 +109,7 @@ document.getElementById('btn-create').addEventListener('click', async () => {
     status.textContent = '✓ Verbindung aktiv – Teilnehmer können beitreten';
     document.querySelector('.lobby-footer')?.prepend(status);
   } catch (err) {
-    alert('Verbindung fehlgeschlagen.\n\nTipp: Mobilfunk statt Hotspot probieren, oder anderes Netz.\n\n' + err.message);
+    alert('Verbindung fehlgeschlagen.\n\nEinmalig FIREBASE-EINRICHTEN.bat ausführen (3 Min.), dann erneut versuchen.\n\n' + err.message);
   } finally {
     btn.disabled = false;
     btn.textContent = 'Spiel erstellen';

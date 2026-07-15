@@ -1,0 +1,10 @@
+{
+  "rules": {
+    "quiz": {
+      "$pin": {
+        ".read": true,
+        ".write": true
+      }
+    }
+  }
+}

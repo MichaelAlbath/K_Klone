@@ -9,62 +9,48 @@
     input { font-size: 1.1rem; padding: 0.5rem; width: 8rem; }
     button { font-size: 1rem; padding: 0.5rem 1rem; margin: 0.25rem; cursor: pointer; }
     #log { background: #111; color: #0f0; padding: 1rem; border-radius: 8px; font: 0.85rem/1.4 monospace; white-space: pre-wrap; min-height: 200px; }
-    .bad { color: #f66; }
     .ok { color: #6f6; }
+    .bad { color: #f66; }
   </style>
 </head>
 <body>
   <h1>Verbindungstest</h1>
-  <p>PIN vom Beamer eingeben und testen, ob Nachrichten ankommen.</p>
+  <p id="backend-info"></p>
   <input id="pin" placeholder="PIN" maxlength="6" inputmode="numeric">
   <button id="btn-host">Als Host testen</button>
   <button id="btn-player">Als Spieler testen</button>
   <pre id="log"></pre>
+  <script src="js/config.js"></script>
+  <script src="js/transport-mqtt.js?v=4"></script>
   <script>
     const logEl = document.getElementById('log');
+    const cfg = window.QuizConfig || {};
+
+    document.getElementById('backend-info').textContent =
+      cfg.FIREBASE_DB_URL
+        ? 'Backend: Firebase ✓'
+        : cfg.RELAY_URL
+          ? 'Backend: Relay ✓'
+          : '⚠ Kein Server konfiguriert – FIREBASE-EINRICHTEN.bat ausführen';
+
     function log(msg, ok) {
       const line = document.createElement('div');
-      line.className = ok ? 'ok' : '';
+      line.className = ok ? 'ok' : 'bad';
       line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
       logEl.appendChild(line);
       logEl.scrollTop = logEl.scrollHeight;
-    }
-
-    async function pollTopic(topic, since = 'none') {
-      const t0 = performance.now();
-      const res = await fetch(`https://ntfy.sh/${topic}/json?poll=1&since=${since}`, { cache: 'no-store' });
-      const text = await res.text();
-      const ms = Math.round(performance.now() - t0);
-      return { ok: res.ok, ms, text, topic };
-    }
-
-    async function postTopic(topic, body) {
-      const t0 = performance.now();
-      const res = await fetch(`https://ntfy.sh/${topic}`, {
-        method: 'POST',
-        body: JSON.stringify(body),
-        headers: { 'Content-Type': 'text/plain', 'Cache': 'no' },
-      });
-      const ms = Math.round(performance.now() - t0);
-      return { ok: res.ok, ms, topic };
     }
 
     document.getElementById('btn-host').onclick = async () => {
       logEl.innerHTML = '';
       const pin = document.getElementById('pin').value.trim();
       if (!pin) return log('PIN fehlt', false);
-      const all = `kk${pin}-all`;
-      const inn = `kk${pin}-in`;
       log('Host-Test startet…');
+      const t = new QuizTransport(pin, 'host');
       try {
-        const p1 = await postTopic(all, { type: 'host-ready', pin });
-        log(`POST ${all}: ${p1.ok ? 'OK' : 'FEHLER'} (${p1.ms}ms)`, p1.ok);
-        const r1 = await pollTopic(all);
-        log(`POLL ${all}: ${r1.ok ? 'OK' : 'FEHLER'} (${r1.ms}ms)`, r1.ok);
-        log(r1.text || '(leer)', !!r1.text);
-        const r2 = await pollTopic(inn);
-        log(`POLL ${inn}: ${r2.ok ? 'OK' : 'FEHLER'} (${r2.ms}ms) – Join-Anfragen vom Handy`, r2.ok);
-        log(r2.text || '(noch keine Join-Anfrage)', true);
+        await t.connect();
+        log('Verbindung OK', true);
+        t.destroy();
       } catch (e) {
         log('FEHLER: ' + e.message, false);
       }
@@ -74,15 +60,20 @@
       logEl.innerHTML = '';
       const pin = document.getElementById('pin').value.trim();
       if (!pin) return log('PIN fehlt', false);
-      const all = `kk${pin}-all`;
-      const inn = `kk${pin}-in`;
       log('Spieler-Test startet…');
+      const t = new QuizTransport(pin, 'player');
+      let hostReady = false;
+      t.onMessage = (m) => {
+        if (m.type === 'host-ready') hostReady = true;
+      };
       try {
-        const r1 = await pollTopic(all);
-        log(`POLL host-ready ${all}: ${r1.ok ? 'OK' : 'FEHLER'} (${r1.ms}ms)`, r1.ok);
-        log(r1.text || '(Host nicht aktiv?)', !!r1.text.includes('host-ready'));
-        const p1 = await postTopic(inn, { type: 'join', name: 'Test', playerId: 'test1' });
-        log(`POST join ${inn}: ${p1.ok ? 'OK' : 'FEHLER'} (${p1.ms}ms)`, p1.ok);
+        await t.connect();
+        log('Verbindung OK – warte auf Host…', true);
+        await new Promise((r) => setTimeout(r, 3000));
+        log(hostReady ? 'Host gefunden ✓' : 'Host nicht aktiv (Beamer: Spiel erstellen?)', hostReady);
+        t.sendToHost({ type: 'join', name: 'Test' });
+        log('Join gesendet', true);
+        t.destroy();
       } catch (e) {
         log('FEHLER: ' + e.message, false);
       }
