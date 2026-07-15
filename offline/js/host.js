@@ -338,4 +338,47 @@ function escapeHtml(str) {
   return d.innerHTML;
 }
 
-loadQuizzes();
+function initApp() {
+  loadQuizzes();
+}
+
+function tryAdminLogin() {
+  const pw = document.getElementById('admin-password').value;
+  const errorEl = document.getElementById('login-error');
+  const loginScreen = document.getElementById('screen-login');
+
+  if (AdminAuth.login(pw)) {
+    errorEl.classList.add('hidden');
+    loginScreen.classList.add('hidden');
+    showScreen('setup');
+    initApp();
+  } else {
+    errorEl.classList.remove('hidden');
+    document.getElementById('admin-password').value = '';
+    document.getElementById('admin-password').focus();
+  }
+}
+
+function initAuth() {
+  const loginScreen = document.getElementById('screen-login');
+  if (!loginScreen) {
+    initApp();
+    return;
+  }
+
+  if (AdminAuth.isAuthenticated()) {
+    loginScreen.classList.add('hidden');
+    showScreen('setup');
+    initApp();
+    return;
+  }
+
+  loginScreen.classList.remove('hidden');
+  document.getElementById('btn-admin-login').addEventListener('click', tryAdminLogin);
+  document.getElementById('admin-password').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') tryAdminLogin();
+  });
+  document.getElementById('admin-password').focus();
+}
+
+initAuth();

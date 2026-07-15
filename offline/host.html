@@ -52,10 +52,40 @@
       margin-bottom: 20px;
       text-align: left;
     }
+    #screen-login {
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #2d0a5e, #46178f);
+      min-height: 100vh;
+    }
+    #admin-password {
+      width: 100%;
+      padding: 14px;
+      font-size: 1.1rem;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    .login-error {
+      color: #e21b3c;
+      font-weight: 600;
+      margin-top: 12px;
+    }
   </style>
 </head>
 <body>
-  <div id="screen-setup" class="screen">
+  <div id="screen-login" class="screen">
+    <div class="setup-card">
+      <h1>Admin-Zugang</h1>
+      <p class="subtitle">Nur für Quiz-Leiter</p>
+      <input type="password" id="admin-password" placeholder="Passwort" autocomplete="current-password">
+      <button id="btn-admin-login" class="btn btn-primary">Anmelden</button>
+      <p id="login-error" class="login-error hidden">Falsches Passwort</p>
+    </div>
+  </div>
+
+  <div id="screen-setup" class="screen hidden">
     <div class="setup-card">
       <span class="offline-badge">Kein Server · Keine Firewall</span>
       <h1>Quiz Host</h1>
@@ -143,6 +173,7 @@
   <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="js/sounds.js"></script>
+  <script src="js/admin-auth.js"></script>
   <script src="js/game-engine.js"></script>
   <script src="js/quizzes-data.js"></script>
   <script src="js/host.js"></script>
