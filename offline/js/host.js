@@ -126,9 +126,7 @@ function showLobby() {
 }
 
 function getPlayUrl() {
-  const path = window.location.pathname.replace(/host\.html$/, '');
-  const base = window.location.origin + path.replace(/\/?$/, '/');
-  return base + 'SPIELEN.html';
+  return window.QuizConfig?.getPlayUrl() || 'https://michaelalbath.github.io/K_Klone/SPIELEN.html';
 }
 
 function showJoinInfo() {
