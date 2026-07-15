@@ -77,7 +77,7 @@ async function joinGame() {
     transport._joinTimeout = joinTimeout;
     transport.sendToHost({ type: 'join', name });
   } catch (err) {
-    showError('Verbindung fehlgeschlagen. Host gestartet? Internet/WLAN prüfen.');
+    showError('Verbindung fehlgeschlagen. Host gestartet? Internetverbindung prüfen.');
     btn.disabled = false;
     btn.textContent = 'Beitreten';
     transport.destroy();
