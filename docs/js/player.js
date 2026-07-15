@@ -65,17 +65,31 @@ async function joinGame() {
 
   try {
     await transport.connect();
-    const joinTimeout = setTimeout(() => {
+    let attempts = 0;
+    const maxAttempts = 15;
+
+    const tryJoin = () => {
+      if (playerId) return;
+      attempts++;
+      transport.sendToHost({ type: 'join', name });
+      if (attempts < maxAttempts) {
+        transport._joinRetry = setTimeout(tryJoin, 2000);
+      }
+    };
+
+    transport._joinTimeout = setTimeout(() => {
       if (!playerId) {
-        showError('Kein Host gefunden. PIN prüfen – auf dem Beamer muss „Spiel erstellen" aktiv sein.');
+        if (transport._joinRetry) clearTimeout(transport._joinRetry);
+        showError('Kein Host gefunden. PIN prüfen – auf dem Beamer „Spiel erstellen" klicken und Seite offen lassen.');
         btn.disabled = false;
         btn.textContent = 'Beitreten';
         transport.destroy();
         transport = null;
       }
-    }, 8000);
-    transport._joinTimeout = joinTimeout;
-    transport.sendToHost({ type: 'join', name });
+    }, 32000);
+
+    btn.textContent = 'Suche Host...';
+    tryJoin();
   } catch (err) {
     showError('Verbindung fehlgeschlagen. Host gestartet? Internetverbindung prüfen.');
     btn.disabled = false;
@@ -95,6 +109,7 @@ async function joinGame() {
 
     if (msg.type === 'joined') {
       if (transport._joinTimeout) clearTimeout(transport._joinTimeout);
+      if (transport._joinRetry) clearTimeout(transport._joinRetry);
       playerId = msg.playerId || transport.getPlayerId();
       playerName = msg.player.name;
       playerScore = 0;

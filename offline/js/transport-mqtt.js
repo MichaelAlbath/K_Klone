@@ -1,192 +1,100 @@
-const MQTT_BROKERS = [
-  'wss://broker.emqx.io:8084/mqtt',
-  'wss://broker.hivemq.com:8884/mqtt',
-  'wss://test.mosquitto.org:8081',
-];
+const NTFY_BASE = 'https://ntfy.sh';
+const POLL_MS = 800;
 
 class QuizTransport {
   constructor(pin, role, playerId = null) {
-    this.pin = pin;
+    this.pin = String(pin).trim();
     this.role = role;
     this.playerId = playerId || `p${Math.random().toString(36).slice(2, 10)}`;
-    this.mode = null;
-    this.client = null;
-    this.sources = [];
+    this.lastIds = {};
+    this.pollTimer = null;
+    this.heartbeatTimer = null;
     this.onMessage = null;
+    this.connected = false;
   }
 
-  _ntfyTopic(suffix) {
+  _topic(suffix) {
     return `kk${this.pin}${suffix}`;
   }
 
-  _mqttTopicHost() {
-    return `kk/${this.pin}/host`;
-  }
-
-  _mqttTopicAll() {
-    return `kk/${this.pin}/all`;
-  }
-
-  _mqttTopicPlayer(id) {
-    return `kk/${this.pin}/player/${id}`;
+  _pollTopics() {
+    if (this.role === 'host') {
+      return [this._topic('in')];
+    }
+    return [this._topic('all'), this._topic(`p${this.playerId}`)];
   }
 
   connect() {
-    return this._connectNtfy().catch(() => this._connectMqtt(0));
+    return new Promise((resolve) => {
+      this.connected = true;
+      this.pollTimer = setInterval(() => this._poll(), POLL_MS);
+      if (this.role === 'host') {
+        this._publish(this._topic('all'), { type: 'host-ready', pin: this.pin });
+        this.heartbeatTimer = setInterval(() => {
+          this._publish(this._topic('all'), { type: 'host-ready', pin: this.pin });
+        }, 3000);
+      }
+      resolve();
+    });
   }
 
-  _connectNtfy() {
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        this._closeSources();
-        reject(new Error('ntfy timeout'));
-      }, 12000);
+  async _poll() {
+    if (!this.connected) return;
 
-      const topics =
-        this.role === 'host'
-          ? [this._ntfyTopic('in')]
-          : [this._ntfyTopic('all'), this._ntfyTopic(`p${this.playerId}`)];
+    for (const topic of this._pollTopics()) {
+      const since = this.lastIds[topic] || 'none';
+      try {
+        const res = await fetch(`${NTFY_BASE}/${topic}/json?poll=1&since=${since}`);
+        if (!res.ok) continue;
+        const messages = await res.json();
+        if (!Array.isArray(messages)) continue;
 
-      let opened = 0;
-      const needed = topics.length;
-
-      topics.forEach((topic) => {
-        const es = new EventSource(`https://ntfy.sh/${topic}/sse`);
-        this.sources.push(es);
-
-        es.onopen = () => {
-          opened++;
-          if (opened >= needed) {
-            clearTimeout(timeout);
-            this.mode = 'ntfy';
-            resolve();
-          }
-        };
-
-        es.onmessage = (event) => {
+        for (const entry of messages) {
+          if (entry.id) this.lastIds[topic] = entry.id;
+          if (!entry.message) continue;
           try {
-            const msg = JSON.parse(event.data);
+            const msg = JSON.parse(entry.message);
             this.onMessage?.(msg);
           } catch {
             /* ignore */
           }
-        };
-
-        es.onerror = () => {
-          if (this.mode !== 'ntfy') {
-            clearTimeout(timeout);
-            this._closeSources();
-            reject(new Error('ntfy error'));
-          }
-        };
-      });
-    });
-  }
-
-  _connectMqtt(index) {
-    if (index >= MQTT_BROKERS.length) {
-      return Promise.reject(
-        new Error('Keine Verbindung möglich. Anderes Netz versuchen (z.B. Handy-Mobilfunk statt Hotspot).')
-      );
-    }
-
-    return new Promise((resolve, reject) => {
-      const broker = MQTT_BROKERS[index];
-      const clientId = `kk_${this.role}_${Math.random().toString(36).slice(2, 9)}`;
-      const client = mqtt.connect(broker, {
-        clientId,
-        clean: true,
-        reconnectPeriod: 0,
-        connectTimeout: 12000,
-      });
-
-      let settled = false;
-      const fail = () => {
-        if (settled) return;
-        settled = true;
-        client.end(true);
-        this._connectMqtt(index + 1).then(resolve).catch(reject);
-      };
-
-      const timer = setTimeout(fail, 13000);
-
-      client.on('connect', () => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(timer);
-        this.mode = 'mqtt';
-        this.client = client;
-
-        if (this.role === 'host') {
-          client.subscribe(this._mqttTopicHost());
-        } else {
-          client.subscribe([this._mqttTopicAll(), this._mqttTopicPlayer(this.playerId)]);
         }
-
-        client.on('message', (_topic, payload) => {
-          try {
-            const msg = JSON.parse(payload.toString());
-            this.onMessage?.(msg);
-          } catch {
-            /* ignore */
-          }
-        });
-
-        resolve();
-      });
-
-      client.on('error', () => {
-        clearTimeout(timer);
-        fail();
-      });
-    });
+      } catch {
+        /* Netzwerk kurz nicht erreichbar – beim nächsten Poll erneut */
+      }
+    }
   }
 
   async _publish(topic, msg) {
-    await fetch(`https://ntfy.sh/${topic}`, {
-      method: 'POST',
-      body: JSON.stringify(msg),
-      headers: { 'Content-Type': 'application/json' },
-    });
+    try {
+      await fetch(`${NTFY_BASE}/${topic}`, {
+        method: 'POST',
+        body: JSON.stringify(msg),
+        headers: { 'Content-Type': 'text/plain' },
+      });
+    } catch {
+      /* ignore */
+    }
   }
 
   sendToHost(msg) {
-    const payload = { ...msg, playerId: this.playerId };
-    if (this.mode === 'ntfy') {
-      this._publish(this._ntfyTopic('in'), payload);
-    } else if (this.mode === 'mqtt') {
-      this.client?.publish(this._mqttTopicHost(), JSON.stringify(payload));
-    }
+    this._publish(this._topic('in'), { ...msg, playerId: this.playerId });
   }
 
   sendToPlayer(playerId, msg) {
-    if (this.mode === 'ntfy') {
-      this._publish(this._ntfyTopic(`p${playerId}`), msg);
-    } else if (this.mode === 'mqtt') {
-      this.client?.publish(this._mqttTopicPlayer(playerId), JSON.stringify(msg));
-    }
+    this._publish(this._topic(`p${playerId}`), msg);
   }
 
   broadcast(msg) {
-    if (this.mode === 'ntfy') {
-      this._publish(this._ntfyTopic('all'), msg);
-    } else if (this.mode === 'mqtt') {
-      this.client?.publish(this._mqttTopicAll(), JSON.stringify(msg));
-    }
-  }
-
-  _closeSources() {
-    for (const es of this.sources) es.close();
-    this.sources = [];
+    this._publish(this._topic('all'), msg);
   }
 
   destroy() {
-    this._closeSources();
-    if (this.client) {
-      this.client.end(true);
-      this.client = null;
-    }
-    this.mode = null;
+    this.connected = false;
+    if (this.pollTimer) clearInterval(this.pollTimer);
+    if (this.heartbeatTimer) clearInterval(this.heartbeatTimer);
+    this.pollTimer = null;
+    this.heartbeatTimer = null;
   }
 
   getPlayerId() {
