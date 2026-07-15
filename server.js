@@ -18,6 +18,10 @@ const PORT = process.env.PORT || 3000;
 const QUIZZES_DIR = path.join(__dirname, 'quizzes');
 
 function getPublicOrigin(req) {
+  if (process.env.RENDER_EXTERNAL_URL) {
+    return process.env.RENDER_EXTERNAL_URL.replace(/\/$/, '');
+  }
+
   const port = PORT;
 
   if (process.env.CODESPACE_NAME) {
@@ -236,6 +240,10 @@ app.get('/host', (_req, res) => {
 
 app.get('/play', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'play.html'));
+});
+
+app.get('/api/health', (_req, res) => {
+  res.json({ ok: true, service: 'k-klone' });
 });
 
 app.get('/api/quizzes', (_req, res) => {
@@ -472,15 +480,20 @@ function getLocalIP() {
 server.listen(PORT, '0.0.0.0', () => {
   const ip = getLocalIP();
   const inCodespace = process.env.CODESPACES === 'true';
+  const publicUrl = process.env.RENDER_EXTERNAL_URL || null;
   console.log('');
   console.log('  ╔══════════════════════════════════════════════╗');
   console.log('  ║         KAHOOT KLONE – Quiz Server           ║');
   console.log('  ╠══════════════════════════════════════════════╣');
-  console.log(`  ║  Host (Beamer):  http://localhost:${PORT}/host`);
-  console.log(`  ║  Spieler:         http://${ip}:${PORT}/play`);
+  if (publicUrl) {
+    console.log(`  ║  Host:   ${publicUrl}/host`);
+    console.log(`  ║  Spiel:  ${publicUrl}/play`);
+  } else {
+    console.log(`  ║  Host (Beamer):  http://localhost:${PORT}/host`);
+    console.log(`  ║  Spieler:         http://${ip}:${PORT}/play`);
+  }
   if (inCodespace) {
     console.log('  ║  Codespace: Port 3000 muss „Öffentlich“ sein! ║');
-    console.log('  ║  Host-Tab im Browser öffnen → QR-Code teilen ║');
   }
   console.log('  ╚══════════════════════════════════════════════╝');
   console.log('');
