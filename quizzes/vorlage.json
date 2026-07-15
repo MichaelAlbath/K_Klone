@@ -1,0 +1,17 @@
+{
+  "title": "Mein Quiz",
+  "description": "Beschreibung deines Quiz",
+  "timePerQuestion": 20,
+  "questions": [
+    {
+      "text": "Deine Frage hier?",
+      "answers": ["Antwort A", "Antwort B", "Antwort C", "Antwort D"],
+      "correct": 0
+    },
+    {
+      "text": "Zweite Frage?",
+      "answers": ["Ja", "Nein", "Vielleicht", "Weiß nicht"],
+      "correct": 1
+    }
+  ]
+}

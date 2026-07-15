@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Quiz – Mitspielen</title>
+  <link rel="stylesheet" href="/css/common.css">
+  <link rel="stylesheet" href="/css/player.css">
+</head>
+<body>
+  <!-- Join -->
+  <div id="screen-join" class="screen">
+    <div class="join-card">
+      <h1>Quiz!</h1>
+      <p class="subtitle">Gib PIN und deinen Namen ein</p>
+      <input type="text" id="input-pin" placeholder="Game PIN" maxlength="6" inputmode="numeric" pattern="[0-9]*">
+      <input type="text" id="input-name" placeholder="Dein Name" maxlength="15">
+      <button id="btn-join" class="btn btn-primary">Beitreten</button>
+      <p id="join-error" class="error hidden"></p>
+    </div>
+  </div>
+
+  <!-- Waiting -->
+  <div id="screen-waiting" class="screen hidden">
+    <div class="waiting-content">
+      <div class="avatar" id="player-avatar"></div>
+      <h2 id="waiting-name"></h2>
+      <p class="waiting-text">Du bist dabei!</p>
+      <div class="loader"></div>
+      <p class="waiting-hint">Warte auf den Start...</p>
+    </div>
+  </div>
+
+  <!-- Question -->
+  <div id="screen-question" class="screen hidden">
+    <div class="q-top">
+      <span id="p-score" class="p-score">0</span>
+      <span id="p-timer" class="p-timer">20</span>
+    </div>
+    <h2 id="p-question-text" class="p-question-text"></h2>
+    <div id="p-answers" class="p-answers"></div>
+  </div>
+
+  <!-- Answered wait -->
+  <div id="screen-answered" class="screen hidden">
+    <div class="answered-content">
+      <div class="checkmark">✓</div>
+      <h2>Antwort gesendet!</h2>
+      <p>Warte auf die anderen...</p>
+    </div>
+  </div>
+
+  <!-- Feedback -->
+  <div id="screen-feedback" class="screen hidden">
+    <div id="feedback-icon" class="feedback-icon"></div>
+    <h2 id="feedback-text"></h2>
+    <p id="feedback-points" class="feedback-points"></p>
+  </div>
+
+  <!-- Leaderboard -->
+  <div id="screen-leaderboard" class="screen hidden">
+    <h2 class="lb-title">Rangliste</h2>
+    <p id="lb-rank" class="lb-rank"></p>
+    <ul id="p-leaderboard" class="p-leaderboard"></ul>
+    <p id="p-total-score" class="p-total-score"></p>
+  </div>
+
+  <!-- Podium -->
+  <div id="screen-podium" class="screen hidden">
+    <h1 class="podium-emoji">🏆</h1>
+    <h2 id="podium-rank-text"></h2>
+    <p id="podium-score-text" class="podium-score-text"></p>
+    <ul id="p-podium" class="p-podium"></ul>
+  </div>
+
+  <!-- Ended -->
+  <div id="screen-ended" class="screen hidden">
+    <h2>Spiel beendet</h2>
+    <p>Danke fürs Mitspielen!</p>
+    <button id="btn-rejoin" class="btn btn-primary">Neues Spiel</button>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/sounds.js"></script>
+  <script src="/js/player.js"></script>
+</body>
+</html>

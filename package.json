@@ -1,0 +1,15 @@
+{
+  "name": "kahoot-klone",
+  "version": "1.0.0",
+  "description": "Kahoot-ähnliches Live-Quiz für 60+ Teilnehmer",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "qrcode": "^1.5.4",
+    "socket.io": "^4.8.1"
+  }
+}

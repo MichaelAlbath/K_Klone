@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz Host</title>
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/host.css">
+</head>
+<body>
+  <div id="screen-setup" class="screen">
+    <div class="setup-card">
+      <h1>Quiz Host</h1>
+      <p class="subtitle">Wähle ein Quiz und starte das Spiel</p>
+      <p class="subtitle" style="font-size:0.85rem;color:#888;margin-top:-20px;">Kein Node.js nötig – nur Browser + Internet</p>
+      <select id="quiz-select"></select>
+      <button id="btn-create" class="btn btn-primary">Spiel erstellen</button>
+    </div>
+  </div>
+
+  <div id="screen-lobby" class="screen hidden">
+    <div class="lobby-header">
+      <div class="logo">QUIZ!</div>
+      <div class="pin-box">
+        <span class="pin-label">PIN:</span>
+        <span id="pin-display" class="pin-value">000000</span>
+      </div>
+      <button id="btn-sound" class="btn-icon" title="Sound an/aus">🔊</button>
+    </div>
+    <div class="lobby-body">
+      <div class="join-info">
+        <h2>Beitreten unter:</h2>
+        <p id="join-url" class="join-url"></p>
+        <div id="qr-code" class="qr-code"></div>
+        <p class="hint">Smartphone → URL oder QR-Code → PIN + Name eingeben</p>
+      </div>
+      <div class="players-panel">
+        <h2>Teilnehmer <span id="player-count" class="badge">0</span></h2>
+        <ul id="player-list" class="player-list"></ul>
+      </div>
+    </div>
+    <div class="lobby-footer">
+      <p id="quiz-title" class="quiz-title"></p>
+      <button id="btn-start" class="btn btn-start" disabled>Spiel starten</button>
+    </div>
+  </div>
+
+  <div id="screen-question" class="screen hidden">
+    <div class="question-header">
+      <span id="q-progress" class="q-progress">1 / 5</span>
+      <div id="timer-bar" class="timer-bar"><div id="timer-fill" class="timer-fill"></div></div>
+      <span id="answered-count" class="answered-count">0 / 0</span>
+    </div>
+    <h1 id="question-text" class="question-text"></h1>
+    <div id="answers-grid" class="answers-grid"></div>
+  </div>
+
+  <div id="screen-reveal" class="screen hidden">
+    <div class="question-header">
+      <span id="r-progress" class="q-progress"></span>
+    </div>
+    <h1 id="reveal-text" class="question-text"></h1>
+    <div id="reveal-grid" class="answers-grid reveal"></div>
+  </div>
+
+  <div id="screen-leaderboard" class="screen hidden">
+    <h1 class="leaderboard-title">Rangliste</h1>
+    <ul id="leaderboard-list" class="leaderboard-list"></ul>
+    <button id="btn-next" class="btn btn-primary btn-next">Weiter</button>
+  </div>
+
+  <div id="screen-podium" class="screen hidden">
+    <h1 class="podium-title">🏆 Sieger 🏆</h1>
+    <div id="podium" class="podium"></div>
+    <div class="podium-actions">
+      <button id="btn-restart" class="btn btn-secondary">Nochmal spielen</button>
+      <button id="btn-end" class="btn btn-primary">Beenden</button>
+    </div>
+  </div>
+
+  <div id="confetti-container"></div>
+
+  <script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="js/sounds.js"></script>
+  <script src="js/game-engine.js"></script>
+  <script src="js/host.js"></script>
+</body>
+</html>

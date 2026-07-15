@@ -1,0 +1,833 @@
+﻿<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Quiz - Mitspielen</title>
+<style>
+:root {
+  --red: #e21b3c;
+  --blue: #1368ce;
+  --yellow: #d89e00;
+  --green: #26890c;
+  --purple: #46178f;
+  --purple-dark: #2d0a5e;
+  --purple-light: #864cbf;
+  --white: #ffffff;
+  --bg: #f0f0f0;
+  --text: #333333;
+  --shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  overflow: hidden;
+}
+
+.hidden {
+  display: none !important;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(40px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes countdownPop {
+  0% { transform: scale(2); opacity: 0; }
+  50% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+@keyframes confetti {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+body {
+  background: var(--purple);
+  color: var(--white);
+  min-height: 100vh;
+  min-height: 100dvh;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  animation: fadeIn 0.3s ease;
+}
+
+/* Join */
+#screen-join {
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: linear-gradient(180deg, var(--purple-dark), var(--purple));
+}
+
+.join-card {
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.join-card h1 {
+  font-size: 3rem;
+  font-weight: 900;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  opacity: 0.8;
+  margin-bottom: 32px;
+}
+
+.join-card input {
+  width: 100%;
+  padding: 16px;
+  font-size: 1.2rem;
+  border: none;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  text-align: center;
+  font-weight: 600;
+}
+
+#input-pin {
+  font-size: 2rem;
+  letter-spacing: 8px;
+  font-weight: 900;
+  color: var(--purple);
+}
+
+.btn {
+  width: 100%;
+  padding: 16px;
+  font-size: 1.2rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-top: 8px;
+}
+
+.btn-primary {
+  background: var(--green);
+  color: var(--white);
+}
+
+.error {
+  color: #ff6b6b;
+  margin-top: 12px;
+  font-weight: 600;
+}
+
+/* Waiting */
+#screen-waiting {
+  align-items: center;
+  justify-content: center;
+  background: var(--purple);
+}
+
+.waiting-content {
+  text-align: center;
+}
+
+.avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--purple-light);
+  margin: 0 auto 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 900;
+  animation: pulse 2s infinite;
+}
+
+.waiting-text {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 24px;
+}
+
+.loader {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(255, 255, 255, 0.2);
+  border-top-color: var(--white);
+  border-radius: 50%;
+  margin: 0 auto 16px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.waiting-hint {
+  opacity: 0.6;
+}
+
+/* Question */
+#screen-question {
+  background: var(--bg);
+  color: var(--text);
+}
+
+.q-top {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--purple);
+  color: var(--white);
+  font-weight: 900;
+  font-size: 1.1rem;
+}
+
+.p-timer {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4px 16px;
+  border-radius: 20px;
+}
+
+.p-timer.urgent {
+  background: var(--red);
+  animation: pulse 0.5s infinite;
+}
+
+.p-question-text {
+  padding: 20px 16px;
+  font-size: 1.3rem;
+  text-align: center;
+  line-height: 1.4;
+  background: var(--white);
+  margin: 12px;
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+.p-answers {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 8px;
+  padding: 8px;
+  min-height: 0;
+}
+
+.p-answer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 16px 12px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--white);
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.1s;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.p-answer:active {
+  transform: scale(0.95);
+}
+
+.p-answer.selected {
+  opacity: 0.7;
+  transform: scale(0.97);
+}
+
+.p-answer.disabled {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* Answered */
+#screen-answered {
+  align-items: center;
+  justify-content: center;
+  background: var(--purple);
+}
+
+.answered-content {
+  text-align: center;
+}
+
+.checkmark {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: var(--green);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  margin: 0 auto 20px;
+  animation: countdownPop 0.4s ease;
+}
+
+/* Feedback */
+#screen-feedback {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px;
+}
+
+#screen-feedback.correct {
+  background: var(--green);
+}
+
+#screen-feedback.wrong {
+  background: var(--red);
+}
+
+.feedback-icon {
+  font-size: 5rem;
+  margin-bottom: 16px;
+  animation: countdownPop 0.5s ease;
+}
+
+.feedback-points {
+  font-size: 2rem;
+  font-weight: 900;
+  margin-top: 12px;
+}
+
+/* Leaderboard */
+#screen-leaderboard {
+  background: var(--purple);
+  padding: 24px 16px;
+  align-items: center;
+}
+
+.lb-title {
+  font-size: 1.8rem;
+  margin-bottom: 8px;
+}
+
+.lb-rank {
+  font-size: 1.2rem;
+  opacity: 0.8;
+  margin-bottom: 24px;
+}
+
+.p-leaderboard {
+  list-style: none;
+  width: 100%;
+  max-width: 400px;
+}
+
+.p-leaderboard li {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 16px;
+  margin-bottom: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.p-leaderboard li.me {
+  background: rgba(255, 255, 255, 0.25);
+  border: 2px solid var(--white);
+}
+
+.p-total-score {
+  margin-top: 24px;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+/* Podium */
+#screen-podium {
+  background: linear-gradient(180deg, var(--purple-dark), var(--purple));
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+}
+
+.podium-emoji {
+  font-size: 4rem;
+  animation: bounce 1s infinite;
+}
+
+#podium-rank-text {
+  font-size: 2rem;
+  margin: 16px 0 8px;
+}
+
+.podium-score-text {
+  font-size: 1.2rem;
+  opacity: 0.8;
+  margin-bottom: 32px;
+}
+
+.p-podium {
+  list-style: none;
+  width: 100%;
+  max-width: 400px;
+}
+
+.p-podium li {
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.p-podium li:first-child {
+  background: rgba(216, 158, 0, 0.3);
+  font-size: 1.3rem;
+}
+
+/* Ended */
+#screen-ended {
+  align-items: center;
+  justify-content: center;
+  background: var(--purple);
+  text-align: center;
+  gap: 16px;
+}
+
+</style>
+</head>
+<body>
+<div id="screen-join" class="screen">
+  <div class="join-card">
+    <h1>Quiz!</h1>
+    <p class="subtitle">Gib PIN und deinen Namen ein</p>
+    <input type="text" id="input-pin" placeholder="Game PIN" maxlength="6" inputmode="numeric">
+    <input type="text" id="input-name" placeholder="Dein Name" maxlength="15">
+    <button id="btn-join" class="btn btn-primary">Beitreten</button>
+    <p id="join-error" class="error hidden"></p>
+  </div>
+</div>
+<div id="screen-waiting" class="screen hidden">
+  <div class="waiting-content">
+    <div class="avatar" id="player-avatar"></div>
+    <h2 id="waiting-name"></h2>
+    <p class="waiting-text">Du bist dabei!</p>
+    <div class="loader"></div>
+    <p class="waiting-hint">Warte auf den Start...</p>
+  </div>
+</div>
+<div id="screen-question" class="screen hidden">
+  <div class="q-top"><span id="p-score" class="p-score">0</span><span id="p-timer" class="p-timer">20</span></div>
+  <h2 id="p-question-text" class="p-question-text"></h2>
+  <div id="p-answers" class="p-answers"></div>
+</div>
+<div id="screen-answered" class="screen hidden">
+  <div class="answered-content"><div class="checkmark">&#10003;</div><h2>Antwort gesendet!</h2><p>Warte auf die anderen...</p></div>
+</div>
+<div id="screen-feedback" class="screen hidden">
+  <div id="feedback-icon" class="feedback-icon"></div>
+  <h2 id="feedback-text"></h2>
+  <p id="feedback-points" class="feedback-points"></p>
+</div>
+<div id="screen-leaderboard" class="screen hidden">
+  <h2 class="lb-title">Rangliste</h2>
+  <p id="lb-rank" class="lb-rank"></p>
+  <ul id="p-leaderboard" class="p-leaderboard"></ul>
+  <p id="p-total-score" class="p-total-score"></p>
+</div>
+<div id="screen-podium" class="screen hidden">
+  <h1 class="podium-emoji">&#127942;</h1>
+  <h2 id="podium-rank-text"></h2>
+  <p id="podium-score-text" class="podium-score-text"></p>
+  <ul id="p-podium" class="p-podium"></ul>
+</div>
+<div id="screen-ended" class="screen hidden">
+  <h2>Spiel beendet</h2>
+  <p>Danke fuers Mitspielen!</p>
+  <button id="btn-rejoin" class="btn btn-primary">Neues Spiel</button>
+</div>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<script>
+class SoundManager {
+  constructor() {
+    this.ctx = null;
+    this.enabled = true;
+    this.musicInterval = null;
+  }
+
+  init() {
+    if (!this.ctx) {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+  }
+
+  toggle() {
+    this.enabled = !this.enabled;
+    if (!this.enabled) this.stopMusic();
+    return this.enabled;
+  }
+
+  playTone(freq, duration, type = 'sine', volume = 0.3) {
+    if (!this.enabled || !this.ctx) return;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = type;
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(volume, this.ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start();
+    osc.stop(this.ctx.currentTime + duration);
+  }
+
+  playJoin() {
+    this.init();
+    this.playTone(523, 0.15);
+    setTimeout(() => this.playTone(659, 0.15), 100);
+    setTimeout(() => this.playTone(784, 0.2), 200);
+  }
+
+  playStart() {
+    this.init();
+    [392, 440, 494, 523, 587, 659, 784].forEach((f, i) => {
+      setTimeout(() => this.playTone(f, 0.2, 'square', 0.15), i * 120);
+    });
+  }
+
+  playCountdown() {
+    this.init();
+    this.playTone(880, 0.1, 'square', 0.2);
+  }
+
+  playCorrect() {
+    this.init();
+    this.playTone(523, 0.12);
+    setTimeout(() => this.playTone(659, 0.12), 100);
+    setTimeout(() => this.playTone(784, 0.25), 200);
+  }
+
+  playWrong() {
+    this.init();
+    this.playTone(200, 0.3, 'sawtooth', 0.2);
+    setTimeout(() => this.playTone(150, 0.4, 'sawtooth', 0.15), 200);
+  }
+
+  playTick() {
+    this.init();
+    this.playTone(600, 0.05, 'square', 0.1);
+  }
+
+  playVictory() {
+    this.init();
+    const notes = [523, 659, 784, 1047, 784, 1047, 1319];
+    notes.forEach((f, i) => setTimeout(() => this.playTone(f, 0.3, 'square', 0.2), i * 200));
+  }
+
+  startLobbyMusic() {
+    if (!this.enabled) return;
+    this.stopMusic();
+    this.init();
+    const melody = [262, 294, 330, 349, 392, 349, 330, 294];
+    let i = 0;
+    this.musicInterval = setInterval(() => {
+      if (!this.enabled) return;
+      this.playTone(melody[i % melody.length], 0.3, 'triangle', 0.08);
+      i++;
+    }, 500);
+  }
+
+  stopMusic() {
+    if (this.musicInterval) {
+      clearInterval(this.musicInterval);
+      this.musicInterval = null;
+    }
+  }
+}
+
+window.SoundManager = SoundManager;
+
+const sound = new SoundManager();
+
+let playerId = null;
+let playerName = null;
+let playerScore = 0;
+let timerInterval = null;
+let peer = null;
+let conn = null;
+
+const screens = {
+  join: document.getElementById('screen-join'),
+  waiting: document.getElementById('screen-waiting'),
+  question: document.getElementById('screen-question'),
+  answered: document.getElementById('screen-answered'),
+  feedback: document.getElementById('screen-feedback'),
+  leaderboard: document.getElementById('screen-leaderboard'),
+  podium: document.getElementById('screen-podium'),
+  ended: document.getElementById('screen-ended'),
+};
+
+function showScreen(name) {
+  Object.values(screens).forEach((s) => s.classList.add('hidden'));
+  screens[name]?.classList.remove('hidden');
+}
+
+const params = new URLSearchParams(window.location.search);
+const pinFromUrl = params.get('pin');
+if (pinFromUrl) document.getElementById('input-pin').value = pinFromUrl;
+
+document.getElementById('btn-join').addEventListener('click', joinGame);
+document.getElementById('input-name').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') joinGame();
+});
+
+document.getElementById('btn-rejoin').addEventListener('click', () => {
+  if (conn) conn.close();
+  if (peer) peer.destroy();
+  playerId = null;
+  showScreen('join');
+});
+
+function joinGame() {
+  sound.init();
+  const pin = document.getElementById('input-pin').value.trim();
+  const name = document.getElementById('input-name').value.trim();
+  const errorEl = document.getElementById('join-error');
+  const btn = document.getElementById('btn-join');
+
+  if (!pin || pin.length < 4) {
+    showError('Bitte gÃ¼ltige PIN eingeben.');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Verbinde...';
+  errorEl.classList.add('hidden');
+
+  if (peer) peer.destroy();
+
+  peer = new Peer({ debug: 1 });
+
+  peer.on('open', () => {
+    conn = peer.connect(`kahoot-${pin}`, { reliable: true });
+
+    conn.on('open', () => {
+      conn.send({ type: 'join', name });
+    });
+
+    conn.on('data', handleMessage);
+
+    conn.on('error', () => {
+      showError('Verbindung fehlgeschlagen.');
+      btn.disabled = false;
+      btn.textContent = 'Beitreten';
+    });
+  });
+
+  peer.on('error', (err) => {
+    showError('Kein Spiel mit dieser PIN gefunden. Host gestartet?');
+    btn.disabled = false;
+    btn.textContent = 'Beitreten';
+  });
+
+  function handleMessage(raw) {
+    const msg = typeof raw === 'string' ? JSON.parse(raw) : raw;
+
+    if (msg.type === 'error') {
+      showError(msg.message);
+      btn.disabled = false;
+      btn.textContent = 'Beitreten';
+      return;
+    }
+
+    if (msg.type === 'joined') {
+      playerId = msg.playerId;
+      playerName = msg.player.name;
+      playerScore = 0;
+      document.getElementById('waiting-name').textContent = playerName;
+      document.getElementById('player-avatar').textContent = playerName.charAt(0).toUpperCase();
+      showScreen('waiting');
+      sound.playJoin();
+      btn.disabled = false;
+      btn.textContent = 'Beitreten';
+      if (msg.state) applyPlayerState(msg.state);
+    }
+
+    if (msg.type === 'question:start') showQuestion(msg.question);
+    if (msg.type === 'question:reveal') showReveal(msg);
+    if (msg.type === 'leaderboard:show') showLeaderboard(msg.leaderboard);
+    if (msg.type === 'podium:show') showPodium(msg.podium);
+    if (msg.type === 'game:reset') {
+      playerScore = 0;
+      showScreen('waiting');
+    }
+    if (msg.type === 'game:ended') showScreen('ended');
+    if (msg.type === 'answer:received') showScreen('answered');
+  }
+}
+
+function applyPlayerState(s) {
+  if (s.phase === 'question' && s.question) showQuestion(s.question);
+  if (s.reveal) showReveal({ correctIndex: s.reveal.correctIndex, results: { [playerId]: { correct: s.reveal.correct, points: s.reveal.points } } });
+  if (s.leaderboard) showLeaderboard(s.leaderboard);
+  if (s.podium) showPodium(s.podium);
+}
+
+function showError(msg) {
+  const errorEl = document.getElementById('join-error');
+  errorEl.textContent = msg;
+  errorEl.classList.remove('hidden');
+}
+
+function showQuestion(q) {
+  if (q.alreadyAnswered) {
+    showScreen('answered');
+    return;
+  }
+  showScreen('question');
+  document.getElementById('p-score').textContent = playerScore;
+  document.getElementById('p-question-text').textContent = q.text;
+
+  const container = document.getElementById('p-answers');
+  container.innerHTML = q.answers
+    .map(
+      (a, i) =>
+        `<div class="p-answer" style="background:${a.color}" data-index="${i}">${escapeHtml(a.text)}</div>`
+    )
+    .join('');
+
+  container.querySelectorAll('.p-answer').forEach((btn) => {
+    btn.addEventListener('click', () => submitAnswer(parseInt(btn.dataset.index), btn));
+  });
+
+  startTimer(q.timeLimit);
+}
+
+function submitAnswer(index, btn) {
+  document.querySelectorAll('.p-answer').forEach((b) => b.classList.add('disabled'));
+  btn.classList.add('selected');
+  clearInterval(timerInterval);
+  conn.send({ type: 'answer', answerIndex: index });
+}
+
+function showReveal(data) {
+  clearInterval(timerInterval);
+  const result = data.results[playerId];
+  const screen = screens.feedback;
+  screen.classList.remove('correct', 'wrong');
+
+  if (result?.correct) {
+    screen.classList.add('correct');
+    document.getElementById('feedback-icon').textContent = 'âœ“';
+    document.getElementById('feedback-text').textContent = 'Richtig!';
+    document.getElementById('feedback-points').textContent = `+${result.points} Punkte`;
+    playerScore += result.points;
+    sound.playCorrect();
+  } else {
+    screen.classList.add('wrong');
+    document.getElementById('feedback-icon').textContent = 'âœ—';
+    document.getElementById('feedback-text').textContent = 'Falsch!';
+    document.getElementById('feedback-points').textContent = '0 Punkte';
+    sound.playWrong();
+  }
+  showScreen('feedback');
+}
+
+function showLeaderboard(leaderboard) {
+  showScreen('leaderboard');
+  const myRank = leaderboard.findIndex((p) => p.id === playerId) + 1;
+  document.getElementById('lb-rank').textContent =
+    myRank > 0 ? `Du bist auf Platz ${myRank}!` : 'Du bist noch nicht in den Top 5';
+
+  document.getElementById('p-leaderboard').innerHTML = leaderboard
+    .map(
+      (p, i) =>
+        `<li class="${p.id === playerId ? 'me' : ''}"><span>${i + 1}. ${escapeHtml(p.name)}</span><span>${p.score}</span></li>`
+    )
+    .join('');
+
+  document.getElementById('p-total-score').textContent = `Deine Punkte: ${playerScore}`;
+}
+
+function showPodium(podium) {
+  showScreen('podium');
+  sound.playVictory();
+
+  const myEntry = podium.find((p) => p.id === playerId);
+  const rankText = myEntry ? podium.indexOf(myEntry) + 1 : 0;
+  const rankLabels = { 1: 'Platz 1 â€“ Du hast gewonnen!', 2: 'Platz 2 â€“ Super!', 3: 'Platz 3 â€“ Gut gemacht!' };
+
+  document.getElementById('podium-rank-text').textContent =
+    rankText && rankText <= 3 ? rankLabels[rankText] : 'Spiel beendet!';
+  document.getElementById('podium-score-text').textContent = `Deine Gesamtpunktzahl: ${playerScore}`;
+
+  const medals = ['ðŸ¥‡', 'ðŸ¥ˆ', 'ðŸ¥‰'];
+  document.getElementById('p-podium').innerHTML = podium
+    .map((p, i) => `<li>${medals[i]} ${escapeHtml(p.name)} â€“ ${p.score} Punkte</li>`)
+    .join('');
+}
+
+function startTimer(seconds) {
+  clearInterval(timerInterval);
+  const el = document.getElementById('p-timer');
+  let remaining = seconds;
+  el.textContent = remaining;
+  el.classList.remove('urgent');
+
+  timerInterval = setInterval(() => {
+    remaining--;
+    el.textContent = Math.max(remaining, 0);
+    if (remaining <= 5) {
+      el.classList.add('urgent');
+      sound.playTick();
+    }
+    if (remaining <= 0) {
+      clearInterval(timerInterval);
+      sound.playCountdown();
+      document.querySelectorAll('.p-answer').forEach((b) => b.classList.add('disabled'));
+    }
+  }, 1000);
+}
+
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+</script>
+</body>
+</html>
