@@ -1,0 +1,21 @@
+{
+  "name": "K-Klone Quiz Server",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": {
+      "label": "Quiz Server",
+      "onAutoForward": "openBrowser",
+      "visibility": "public"
+    }
+  },
+  "postCreateCommand": "npm install",
+  "postStartCommand": "npm start",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  }
+}

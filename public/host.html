@@ -6,19 +6,74 @@
   <title>Quiz Host</title>
   <link rel="stylesheet" href="/css/common.css">
   <link rel="stylesheet" href="/css/host.css">
+  <style>
+    .codespace-badge {
+      background: #238636;
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      display: inline-block;
+      margin-bottom: 16px;
+    }
+    #screen-login {
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #2d0a5e, #46178f);
+      min-height: 100vh;
+    }
+    #admin-password {
+      width: 100%;
+      padding: 14px;
+      font-size: 1.1rem;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    .login-error { color: #e21b3c; font-weight: 600; margin-top: 12px; }
+    .setup-hint {
+      background: #fff3cd;
+      color: #664d03;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    .pin-mega {
+      font-size: 4rem;
+      font-weight: 900;
+      letter-spacing: 10px;
+      margin: 12px 0;
+    }
+  </style>
 </head>
 <body>
-  <!-- Setup -->
-  <div id="screen-setup" class="screen">
+  <div id="screen-login" class="screen">
     <div class="setup-card">
+      <h1>Admin-Zugang</h1>
+      <p class="subtitle">Nur für Quiz-Leiter</p>
+      <input type="password" id="admin-password" placeholder="Passwort" autocomplete="current-password">
+      <button id="btn-admin-login" class="btn btn-primary">Anmelden</button>
+      <p id="login-error" class="login-error hidden">Falsches Passwort</p>
+    </div>
+  </div>
+
+  <div id="screen-setup" class="screen hidden">
+    <div class="setup-card">
+      <span class="codespace-badge">GitHub Codespace · Socket.io</span>
       <h1>Quiz Host</h1>
       <p class="subtitle">Wähle ein Quiz und starte das Spiel</p>
+      <div class="setup-hint">
+        Server läuft im Codespace-Container. Teilnehmer nutzen die öffentliche URL (Port 3000 → Öffentlich).
+      </div>
       <select id="quiz-select"></select>
       <button id="btn-create" class="btn btn-primary">Spiel erstellen</button>
     </div>
   </div>
 
-  <!-- Lobby -->
   <div id="screen-lobby" class="screen hidden">
     <div class="lobby-header">
       <div class="logo">QUIZ!</div>
@@ -30,10 +85,11 @@
     </div>
     <div class="lobby-body">
       <div class="join-info">
-        <h2>Beitreten unter:</h2>
-        <p id="join-url" class="join-url"></p>
+        <h2>Teilnehmer beitreten</h2>
+        <p class="pin-mega" id="join-pin-big">000000</p>
         <div id="qr-code" class="qr-code"></div>
-        <p class="hint">Smartphone öffnen → URL eingeben oder QR-Code scannen → PIN + Name</p>
+        <p id="join-url" class="join-url"></p>
+        <p class="hint">QR-Code scannen oder Link teilen – kein gemeinsames WLAN nötig</p>
       </div>
       <div class="players-panel">
         <h2>Teilnehmer <span id="player-count" class="badge">0</span></h2>
@@ -46,7 +102,6 @@
     </div>
   </div>
 
-  <!-- Question -->
   <div id="screen-question" class="screen hidden">
     <div class="question-header">
       <span id="q-progress" class="q-progress">1 / 5</span>
@@ -57,7 +112,6 @@
     <div id="answers-grid" class="answers-grid"></div>
   </div>
 
-  <!-- Reveal -->
   <div id="screen-reveal" class="screen hidden">
     <div class="question-header">
       <span id="r-progress" class="q-progress"></span>
@@ -66,14 +120,12 @@
     <div id="reveal-grid" class="answers-grid reveal"></div>
   </div>
 
-  <!-- Leaderboard -->
   <div id="screen-leaderboard" class="screen hidden">
     <h1 class="leaderboard-title">Rangliste</h1>
     <ul id="leaderboard-list" class="leaderboard-list"></ul>
     <button id="btn-next" class="btn btn-primary btn-next">Weiter</button>
   </div>
 
-  <!-- Podium -->
   <div id="screen-podium" class="screen hidden">
     <h1 class="podium-title">🏆 Sieger 🏆</h1>
     <div id="podium" class="podium"></div>
@@ -87,6 +139,7 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="/js/sounds.js"></script>
+  <script src="/js/admin-auth.js"></script>
   <script src="/js/host.js"></script>
 </body>
 </html>

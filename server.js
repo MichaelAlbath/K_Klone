@@ -195,6 +195,10 @@ function showPodium() {
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
 
+app.get('/', (_req, res) => {
+  res.redirect('/host');
+});
+
 app.get('/host', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'host.html'));
 });
@@ -424,12 +428,17 @@ function getLocalIP() {
 
 server.listen(PORT, '0.0.0.0', () => {
   const ip = getLocalIP();
+  const inCodespace = process.env.CODESPACES === 'true';
   console.log('');
   console.log('  ╔══════════════════════════════════════════════╗');
   console.log('  ║         KAHOOT KLONE – Quiz Server           ║');
   console.log('  ╠══════════════════════════════════════════════╣');
   console.log(`  ║  Host (Beamer):  http://localhost:${PORT}/host`);
   console.log(`  ║  Spieler:         http://${ip}:${PORT}/play`);
+  if (inCodespace) {
+    console.log('  ║  Codespace: Port 3000 muss „Öffentlich“ sein! ║');
+    console.log('  ║  Host-Tab im Browser öffnen → QR-Code teilen ║');
+  }
   console.log('  ╚══════════════════════════════════════════════╝');
   console.log('');
 });

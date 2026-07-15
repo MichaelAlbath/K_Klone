@@ -43,6 +43,7 @@ document.getElementById('btn-create').addEventListener('click', () => {
 function showLobby() {
   showScreen('lobby');
   document.getElementById('pin-display').textContent = state.pin;
+  document.getElementById('join-pin-big').textContent = state.pin;
   document.getElementById('quiz-title').textContent = state.quizTitle;
   updatePlayers();
   loadQR();
@@ -270,4 +271,36 @@ function escapeHtml(str) {
   return d.innerHTML;
 }
 
-loadQuizzes();
+function initApp() {
+  loadQuizzes();
+}
+
+function showLoginError(show) {
+  document.getElementById('login-error').classList.toggle('hidden', !show);
+}
+
+function enterApp() {
+  document.getElementById('screen-login').classList.add('hidden');
+  document.getElementById('screen-setup').classList.remove('hidden');
+  initApp();
+}
+
+document.getElementById('btn-admin-login').addEventListener('click', () => {
+  const pw = document.getElementById('admin-password').value;
+  if (AdminAuth.login(pw)) {
+    showLoginError(false);
+    enterApp();
+  } else {
+    showLoginError(true);
+  }
+});
+
+document.getElementById('admin-password').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('btn-admin-login').click();
+});
+
+if (AdminAuth.isAuthenticated()) {
+  document.getElementById('screen-login').classList.add('hidden');
+  document.getElementById('screen-setup').classList.remove('hidden');
+  initApp();
+}
