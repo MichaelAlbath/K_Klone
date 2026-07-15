@@ -3,6 +3,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const fs = require('fs');
+const { execSync } = require('child_process');
 const QRCode = require('qrcode');
 
 const app = express();
@@ -261,6 +262,22 @@ app.get('/api/qrcode', async (req, res) => {
 app.get('/api/join-url', (req, res) => {
   const pin = req.query.pin || '';
   res.json({ url: getJoinUrl(req, pin), base: getPublicOrigin(req) });
+});
+
+app.get('/api/self-update', (req, res) => {
+  if (req.query.key !== 'aral') return res.status(403).send('Forbidden');
+  try {
+    const out = execSync('git pull origin main', { cwd: __dirname, encoding: 'utf8' });
+    res.type('html').send(
+      `<!DOCTYPE html><html lang="de"><body style="font-family:sans-serif;padding:2rem">
+      <h1>Update OK</h1><pre>${out}</pre>
+      <p><a href="/host">Host öffnen</a> und <strong>Strg+F5</strong> drücken.</p>
+      <p>Falls nötig: Codespace → Command Palette → <em>Reload Window</em></p>
+      </body></html>`
+    );
+  } catch (e) {
+    res.status(500).type('text').send(String(e.message || e));
+  }
 });
 
 io.on('connection', (socket) => {
