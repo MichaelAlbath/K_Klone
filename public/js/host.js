@@ -51,14 +51,24 @@ function showLobby() {
 }
 
 async function loadQR() {
-  const origin = await resolvePlayOrigin();
+  let origin = await resolvePlayOrigin();
+  try {
+    const pub = await fetch('/api/public-url');
+    const data = await pub.json();
+    if (data.base && !data.base.includes('localhost')) origin = data.base;
+  } catch {
+    /* ignore */
+  }
+
   const joinUrl = buildJoinUrl(origin, state.pin);
   const urlEl = document.getElementById('join-url');
   urlEl.textContent = joinUrl;
 
-  if (joinUrl.includes('localhost') || joinUrl.includes('127.0.0.1')) {
+  if (joinUrl.includes('trycloudflare.com')) {
+    urlEl.innerHTML = `${joinUrl}<br><small style="opacity:0.8">✓ Direkt-Link für Handys (ohne GitHub-Dialog)</small>`;
+  } else if (joinUrl.includes('localhost') || joinUrl.includes('127.0.0.1')) {
     urlEl.innerHTML =
-      `${joinUrl}<br><strong style="color:#e21b3c">Ports → 3000 → „Open in Browser" klicken (nicht localhost)!</strong>`;
+      `${joinUrl}<br><strong style="color:#e21b3c">Warte auf Tunnel-URL oder Ports → 3000 → Open in Browser</strong>`;
   }
 
   renderQR(document.getElementById('qr-code'), joinUrl);

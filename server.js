@@ -16,8 +16,27 @@ const io = new Server(server, {
 
 const PORT = process.env.PORT || 3000;
 const QUIZZES_DIR = path.join(__dirname, 'quizzes');
+const TUNNEL_URL_FILE = '/tmp/quiz-public-url.txt';
+
+function readTunnelUrl() {
+  if (process.env.PUBLIC_TUNNEL_URL) {
+    return process.env.PUBLIC_TUNNEL_URL.replace(/\/$/, '');
+  }
+  try {
+    if (fs.existsSync(TUNNEL_URL_FILE)) {
+      const url = fs.readFileSync(TUNNEL_URL_FILE, 'utf8').trim();
+      if (url) return url.replace(/\/$/, '');
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
 
 function getPublicOrigin(req) {
+  const tunnel = readTunnelUrl();
+  if (tunnel) return tunnel;
+
   if (process.env.RENDER_EXTERNAL_URL) {
     return process.env.RENDER_EXTERNAL_URL.replace(/\/$/, '');
   }
@@ -243,7 +262,14 @@ app.get('/play', (_req, res) => {
 });
 
 app.get('/api/health', (_req, res) => {
-  res.json({ ok: true, service: 'k-klone' });
+  res.json({ ok: true, service: 'k-klone', publicUrl: readTunnelUrl() || null });
+});
+
+app.get('/api/public-url', (req, res) => {
+  res.json({
+    base: getPublicOrigin(req),
+    tunnel: !!readTunnelUrl(),
+  });
 });
 
 app.get('/api/quizzes', (_req, res) => {
