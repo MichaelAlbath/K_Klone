@@ -51,18 +51,17 @@ function showLobby() {
 }
 
 async function loadQR() {
-  const res = await fetch(`/api/join-url?pin=${state.pin}`);
-  const { url } = await res.json();
-  document.getElementById('join-url').textContent = url;
+  const origin = await resolvePlayOrigin();
+  const joinUrl = buildJoinUrl(origin, state.pin);
+  const urlEl = document.getElementById('join-url');
+  urlEl.textContent = joinUrl;
 
-  const qrRes = await fetch(`/api/qrcode?pin=${state.pin}`);
-  const svg = await qrRes.text();
-  document.getElementById('qr-code').innerHTML = svg;
-
-  if (url.includes('localhost') || url.includes('127.0.0.1')) {
-    document.getElementById('join-url').innerHTML =
-      `${url}<br><strong style="color:#e21b3c">Host über „Ports → 3000 → Open in Browser“ öffnen, nicht localhost!</strong>`;
+  if (joinUrl.includes('localhost') || joinUrl.includes('127.0.0.1')) {
+    urlEl.innerHTML =
+      `${joinUrl}<br><strong style="color:#e21b3c">Ports → 3000 → „Open in Browser" klicken (nicht localhost)!</strong>`;
   }
+
+  renderQR(document.getElementById('qr-code'), joinUrl);
 }
 
 function updatePlayers() {

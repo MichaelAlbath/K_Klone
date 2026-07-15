@@ -10,7 +10,7 @@
     }
   },
   "postCreateCommand": "npm install",
-  "postStartCommand": "npm start",
+  "postStartCommand": "bash scripts/start.sh",
   "customizations": {
     "vscode": {
       "settings": {
